@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { median } = require('./stats');
+const { median } = require('./src/stats');
 
 test('median returns the middle value of an odd-length sequence', () => {
   assert.strictEqual(median([5, 1, 3]), 3);
