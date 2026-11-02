@@ -1,0 +1,23 @@
+name: File agent request
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'Issue title'
+        required: true
+      request:
+        description: 'Request text (agent mention added automatically)'
+        required: true
+permissions:
+  issues: write
+jobs:
+  file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create issue
+        run: gh issue create -t "$TITLE" -b "@$OWNER $REQUEST" -R "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: ${{ inputs.title }}
+          REQUEST: ${{ inputs.request }}
+          OWNER: ${{ github.repository_owner }}
