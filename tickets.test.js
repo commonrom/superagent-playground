@@ -1,3 +1,7 @@
+// exportCsv renders createdAt in the system timezone (UTC+8 in production);
+// pin it so the expectations below hold on machines with another timezone.
+process.env.TZ = 'Asia/Shanghai';
+
 const test = require('node:test');
 const assert = require('node:assert');
 const { newStore, createTicket, openTickets, exportCsv } = require('./src/tickets');
@@ -28,11 +32,20 @@ test('exportCsv writes a BOM and the agreed semicolon-separated header and rows 
     csv,
     [
       '\uFEFFid;subject;priority;status;createdAt',
-      '1;登录失败;high;open;2026-11-03T07:31:00.000Z',
-      '2;报表打不开;normal;open;2026-11-03T09:00:00.000Z',
+      '1;登录失败;high;open;2026-11-03 15:31',
+      '2;报表打不开;normal;open;2026-11-03 17:00',
     ].join('\n')
   );
   assert.strictEqual(csv.charCodeAt(0), 0xfeff);
+});
+
+test('exportCsv formats createdAt in local time across a date boundary', () => {
+  const store = newStore();
+  createTicket(store, { subject: '跨日', createdAt: '2026-11-02T17:30:00.000Z' });
+
+  assert.deepStrictEqual(exportCsv(store).split('\n').slice(1), [
+    '1;跨日;normal;open;2026-11-03 01:30',
+  ]);
 });
 
 test('exportCsv returns just the BOM-prefixed header when the store is empty', () => {
@@ -45,8 +58,8 @@ test('exportCsv exports every ticket regardless of status', () => {
   createTicket(store, { subject: 'b', createdAt: '2026-11-03T08:00:00.000Z' }).status = 'closed';
 
   assert.deepStrictEqual(exportCsv(store).split('\n').slice(1), [
-    '1;a;normal;open;2026-11-03T07:31:00.000Z',
-    '2;b;normal;closed;2026-11-03T08:00:00.000Z',
+    '1;a;normal;open;2026-11-03 15:31',
+    '2;b;normal;closed;2026-11-03 16:00',
   ]);
 });
 
@@ -65,8 +78,8 @@ test('exportCsv quotes fields containing semicolons, quotes or newlines', () => 
     exportCsv(store),
     [
       '\uFEFFid;subject;priority;status;createdAt',
-      '1;"登录失败; 改了密码";normal;open;2026-11-03T07:31:00.000Z',
-      '2;"他说""打不开""\n已经反馈";normal;open;2026-11-03T09:00:00.000Z',
+      '1;"登录失败; 改了密码";normal;open;2026-11-03 15:31',
+      '2;"他说""打不开""\n已经反馈";normal;open;2026-11-03 17:00',
     ].join('\n')
   );
 });
@@ -82,7 +95,7 @@ test('exportCsv leaves commas unquoted because they no longer delimit fields', (
     exportCsv(store),
     [
       '\uFEFFid;subject;priority;status;createdAt',
-      '1;登录失败, 改了密码;normal;open;2026-11-03T07:31:00.000Z',
+      '1;登录失败, 改了密码;normal;open;2026-11-03 15:31',
     ].join('\n')
   );
 });
