@@ -2,4 +2,5 @@
 module.exports = {
   ...require('./src/arithmetic'),
   ...require('./src/stats'),
+  ...require('./src/tickets'),
 };
