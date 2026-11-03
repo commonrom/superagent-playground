@@ -18,23 +18,25 @@ test('openTickets filters by status', () => {
   assert.strictEqual(openTickets(store).length, 1);
 });
 
-test('exportCsv writes the agreed header and rows in ticket order', () => {
+test('exportCsv writes a BOM and the agreed semicolon-separated header and rows in ticket order', () => {
   const store = newStore();
   createTicket(store, { subject: '登录失败', priority: 'high', createdAt: '2026-11-03T07:31:00.000Z' });
   createTicket(store, { subject: '报表打不开', createdAt: '2026-11-03T09:00:00.000Z' });
 
+  const csv = exportCsv(store);
   assert.strictEqual(
-    exportCsv(store),
+    csv,
     [
-      'id,subject,priority,status,createdAt',
-      '1,登录失败,high,open,2026-11-03T07:31:00.000Z',
-      '2,报表打不开,normal,open,2026-11-03T09:00:00.000Z',
+      '\uFEFFid;subject;priority;status;createdAt',
+      '1;登录失败;high;open;2026-11-03T07:31:00.000Z',
+      '2;报表打不开;normal;open;2026-11-03T09:00:00.000Z',
     ].join('\n')
   );
+  assert.strictEqual(csv.charCodeAt(0), 0xfeff);
 });
 
-test('exportCsv returns just the header when the store is empty', () => {
-  assert.strictEqual(exportCsv(newStore()), 'id,subject,priority,status,createdAt');
+test('exportCsv returns just the BOM-prefixed header when the store is empty', () => {
+  assert.strictEqual(exportCsv(newStore()), '\uFEFFid;subject;priority;status;createdAt');
 });
 
 test('exportCsv exports every ticket regardless of status', () => {
@@ -43,15 +45,15 @@ test('exportCsv exports every ticket regardless of status', () => {
   createTicket(store, { subject: 'b', createdAt: '2026-11-03T08:00:00.000Z' }).status = 'closed';
 
   assert.deepStrictEqual(exportCsv(store).split('\n').slice(1), [
-    '1,a,normal,open,2026-11-03T07:31:00.000Z',
-    '2,b,normal,closed,2026-11-03T08:00:00.000Z',
+    '1;a;normal;open;2026-11-03T07:31:00.000Z',
+    '2;b;normal;closed;2026-11-03T08:00:00.000Z',
   ]);
 });
 
-test('exportCsv quotes fields containing commas, quotes or newlines', () => {
+test('exportCsv quotes fields containing semicolons, quotes or newlines', () => {
   const store = newStore();
   createTicket(store, {
-    subject: '登录失败, 改了密码',
+    subject: '登录失败; 改了密码',
     createdAt: '2026-11-03T07:31:00.000Z',
   });
   createTicket(store, {
@@ -62,9 +64,25 @@ test('exportCsv quotes fields containing commas, quotes or newlines', () => {
   assert.strictEqual(
     exportCsv(store),
     [
-      'id,subject,priority,status,createdAt',
-      '1,"登录失败, 改了密码",normal,open,2026-11-03T07:31:00.000Z',
-      '2,"他说""打不开""\n已经反馈",normal,open,2026-11-03T09:00:00.000Z',
+      '\uFEFFid;subject;priority;status;createdAt',
+      '1;"登录失败; 改了密码";normal;open;2026-11-03T07:31:00.000Z',
+      '2;"他说""打不开""\n已经反馈";normal;open;2026-11-03T09:00:00.000Z',
+    ].join('\n')
+  );
+});
+
+test('exportCsv leaves commas unquoted because they no longer delimit fields', () => {
+  const store = newStore();
+  createTicket(store, {
+    subject: '登录失败, 改了密码',
+    createdAt: '2026-11-03T07:31:00.000Z',
+  });
+
+  assert.strictEqual(
+    exportCsv(store),
+    [
+      '\uFEFFid;subject;priority;status;createdAt',
+      '1;登录失败, 改了密码;normal;open;2026-11-03T07:31:00.000Z',
     ].join('\n')
   );
 });

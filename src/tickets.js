@@ -20,19 +20,21 @@ function openTickets(store) {
 }
 
 const CSV_COLUMNS = ['id', 'subject', 'priority', 'status', 'createdAt'];
+const CSV_DELIMITER = ';';
+const UTF8_BOM = '\uFEFF';
 
 function csvField(value) {
   const text = String(value ?? '');
-  if (!/[",\r\n]/.test(text)) return text;
+  if (!/[;"\r\n]/.test(text)) return text;
   return `"${text.replace(/"/g, '""')}"`;
 }
 
 function exportCsv(store) {
-  const lines = [CSV_COLUMNS.join(',')];
+  const lines = [CSV_COLUMNS.join(CSV_DELIMITER)];
   for (const ticket of store.tickets) {
-    lines.push(CSV_COLUMNS.map(column => csvField(ticket[column])).join(','));
+    lines.push(CSV_COLUMNS.map(column => csvField(ticket[column])).join(CSV_DELIMITER));
   }
-  return lines.join('\n');
+  return UTF8_BOM + lines.join('\n');
 }
 
 module.exports = { newStore, createTicket, openTickets, exportCsv };
