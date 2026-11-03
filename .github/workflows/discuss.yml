@@ -1,0 +1,36 @@
+name: Discuss on a thread
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'issue or comment'
+        required: true
+      title:
+        description: 'Issue title (mode=issue only)'
+        required: false
+      body:
+        description: 'Message text (no mention added)'
+        required: true
+      issue:
+        description: 'Issue number (mode=comment only)'
+        required: false
+permissions:
+  issues: write
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create issue
+        if: ${{ inputs.mode == 'issue' }}
+        run: gh issue create -t "$TITLE" -b "$BODY" -R "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: ${{ inputs.title }}
+          BODY: ${{ inputs.body }}
+      - name: Add comment
+        if: ${{ inputs.mode == 'comment' }}
+        run: gh issue comment "$ISSUE" -b "$BODY" -R "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ inputs.issue }}
+          BODY: ${{ inputs.body }}
