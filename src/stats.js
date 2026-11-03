@@ -15,4 +15,9 @@ function variance(values) {
   return sum / n;
 }
 
-module.exports = { median, variance };
+/** Population standard deviation of numbers. */
+function stdDev(values) {
+  return Math.sqrt(variance(values));
+}
+
+module.exports = { median, variance, stdDev };
