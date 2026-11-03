@@ -29,10 +29,32 @@ function csvField(value) {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+/** Format an instant as `YYYY-MM-DD HH:mm` in the system timezone. */
+function formatLocalDateTime(value) {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = pad2(date.getMonth() + 1);
+  const day = pad2(date.getDate());
+  const hours = pad2(date.getHours());
+  const minutes = pad2(date.getMinutes());
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+}
+
 function exportCsv(store) {
   const lines = [CSV_COLUMNS.join(CSV_DELIMITER)];
   for (const ticket of store.tickets) {
-    lines.push(CSV_COLUMNS.map(column => csvField(ticket[column])).join(CSV_DELIMITER));
+    lines.push(
+      CSV_COLUMNS.map(column => {
+        const value = column === 'createdAt'
+          ? formatLocalDateTime(ticket[column])
+          : ticket[column];
+        return csvField(value);
+      }).join(CSV_DELIMITER)
+    );
   }
   return UTF8_BOM + lines.join('\n');
 }
